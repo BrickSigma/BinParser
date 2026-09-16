@@ -71,7 +71,6 @@ void Section_Print(Section *section)
 
 void Section_Destroy(Section *section)
 {
-    printf("Freeing %s section\n", section->name);
     AttributeList_Destroy(section->attributes);
     free(section);
 }
@@ -114,7 +113,6 @@ Section *SectionList_GetLastSection(SectionList *list)
 
 void SectionList_ParseBinaryFile(SectionList *list, char *file)
 {
-    printf("Parsing %s...\n", file);
     FILE *bin_file = fopen(file, "rb");
     if (bin_file == NULL)
     {
@@ -131,13 +129,10 @@ void SectionList_ParseBinaryFile(SectionList *list, char *file)
     long file_size = ftell(bin_file);
     fseek(bin_file, 0, SEEK_SET);
 
-    printf("File size: %lu\n", file_size);
-
     Section *next_section = list->head;
     do
     {
         Section *current_section = next_section;
-        printf("Parsing %s section at offset 0x%08x...\n", current_section->name, current_section->offset);
         if (current_section->offset >= file_size)
         {
             printf("%s section does not lie in the file, skipping...\n", current_section->name);

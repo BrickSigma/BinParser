@@ -153,8 +153,6 @@ void Attribute_Print(Attribute *attribute)
 
 void Attribute_Destroy(Attribute *attribute)
 {
-    printf("\tFreeing %s attribute\n", attribute->name);
-
     switch (attribute->type)
     {
     case ATTR_TYPE_STR:

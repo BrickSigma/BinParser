@@ -156,14 +156,12 @@ int main(int argc, char **argv)
 
             break;
         default:
-            printf("Unknown line read: %s", line);
+            // Skip unknown lines
             break;
         }
 
         free(line);
     }
-
-    printf("\n");
 
     SectionList_ParseBinaryFile(sections, bin_file);
     SectionList_Print(sections);
