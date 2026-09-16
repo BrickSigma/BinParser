@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.23)
 
-project(binary-parser C)
+project(BinParser C)
 
-add_executable(binary-parser)
+add_executable(binparser)
 
-target_sources(binary-parser
+target_sources(binparser
     PRIVATE
         src/main.c
         src/section.c
