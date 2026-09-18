@@ -86,7 +86,7 @@ Attribute::~Attribute() {}
 
 void Attribute::print() const
 {
-    printf("    %04x: %lu : %s = ", this->offset, this->size, this->name);
+    printf("    %04lx: %lu : %s = ", this->offset, this->size, this->name);
 }
 
 // IntAttribute declarations
@@ -106,6 +106,7 @@ void IntAttribute::set_value(const uint8_t *bytes)
         break;
     case 4:
         this->value = *reinterpret_cast<const uint32_t *>(bytes);
+        break;
     case 8:
         this->value = *reinterpret_cast<const uint64_t *>(bytes);
         break;
@@ -222,7 +223,7 @@ void BinaryAttribute::print() const
 
 SkipAttribute::SkipAttribute(const char *name, size_t offset, size_t size) : Attribute(name, offset, size) {}
 SkipAttribute::~SkipAttribute() {}
-void SkipAttribute::set_value(const uint8_t *bytes) {}
+void SkipAttribute::set_value(const uint8_t *) {}
 
 void SkipAttribute::print() const
 {

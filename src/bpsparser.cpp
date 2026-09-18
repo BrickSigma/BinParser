@@ -1,13 +1,13 @@
 #include "bpsparser.hpp"
 
 #include <stdio.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 /**
  * Read a line from a file.
  *
- * This returns a string allocated with malloc,
- * make sure to `free` it later!
+ * This returns a string allocated with `new`,
+ * make sure to `delete` it later!
  *
  * @return A pointer to the line string, or `NULL` if EOF reached or on error with errno set.
  */
@@ -114,6 +114,8 @@ BPSParser::BPSParser(const char *bps_file)
             section.add_attribute(std::move(new_attribute));
         }
         break;
+        case LineType::IGNORE:
+            break;
         }
 
         delete[] line;
@@ -137,7 +139,7 @@ void BPSParser::parse_binary(const char *file)
         return;
 
     fseek(bin_file, 0, SEEK_END);
-    long file_size = ftell(bin_file);
+    size_t file_size = ftell(bin_file);
     fseek(bin_file, 0, SEEK_SET);
 
     for (Section &section : this->sections)
@@ -186,7 +188,7 @@ void BPSParser::parse_binary(const char *file)
     fclose(bin_file);
 }
 
-void BPSParser::print() const
+void BPSParser::print() const noexcept
 {
     if (!this->binary_file_parsed)
     {

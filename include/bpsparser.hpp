@@ -28,7 +28,7 @@ public:
     // Parse a binary file
     void parse_binary(const char *file);
 
-    void print() const;
+    void print() const noexcept;
 };
 
 #endif // BPSPARSER_HPP

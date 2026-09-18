@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-Section::Section(const char *name, size_t offset) : offset(offset), attributes(std::vector<std::unique_ptr<Attribute>>())
+Section::Section(const char *name, size_t offset) : attributes(), offset(offset)
 {
     strncpy(this->name, name, MAX_SECTION_NAME_LEN - 1);
 }
@@ -49,7 +49,7 @@ void Section::add_attribute(std::unique_ptr<Attribute> attribute)
 
 void Section::print() const
 {
-    printf("%s: 0x%08x\n", this->name, this->offset);
+    printf("%s: 0x%08lx\n", this->name, this->offset);
     for (const std::unique_ptr<Attribute> &attribute : this->attributes)
     {
         attribute->print();

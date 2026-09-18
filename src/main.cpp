@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <iostream>
 
 #include "bpsparser.hpp"
 
@@ -6,8 +6,8 @@ int main(int argc, char **argv)
 {
     if (argc != 3)
     {
-        printf("Not enough arguments passed!\n");
-        printf("Run using ./binary-parser [binary-file] [bps-format]\n");
+        std::cout << "Not enough arguments passed!\n";
+        std::cout << "Run using ./binary-parser [binary-file] [bps-format]\n";
         return -1;
     }
 
