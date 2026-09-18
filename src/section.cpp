@@ -1,6 +1,8 @@
 #include "section.hpp"
 
-#include <stdio.h>
+#include <iostream>
+#include <format>
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -49,12 +51,12 @@ void Section::add_attribute(std::unique_ptr<Attribute> attribute)
 
 void Section::print() const
 {
-    printf("%s: 0x%08lx\n", this->name, this->offset);
+    std::cout << std::format("{}: 0x{:08x}\n", this->name, this->offset);
     for (const std::unique_ptr<Attribute> &attribute : this->attributes)
     {
         attribute->print();
     }
-    printf("\n");
+    std::cout << "\n";
 }
 
 Section::~Section() {}

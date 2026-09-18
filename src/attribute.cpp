@@ -1,6 +1,8 @@
 #include "attribute.hpp"
 
-#include <stdio.h>
+#include <iostream>
+#include <format>
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -73,7 +75,7 @@ static void print_binary(uint8_t byte)
 {
     for (int i = 7; i >= 0; i--)
     {
-        printf("%d", (byte >> i) & 1);
+        std::cout << ((byte >> i) & 1);
     }
 }
 
@@ -86,7 +88,7 @@ Attribute::~Attribute() {}
 
 void Attribute::print() const
 {
-    printf("    %04lx: %lu : %s = ", this->offset, this->size, this->name);
+    std::cout << std::format("    {:04x}: {} : {} = ", this->offset, this->size, this->name);
 }
 
 // IntAttribute declarations
@@ -117,9 +119,9 @@ void IntAttribute::print() const
 {
     Attribute::print();
     if (this->invalid)
-        printf("invalid\n");
+        std::cout << "invalid\n";
     else
-        printf("%ld\n", this->value);
+        std::cout << this->value << "\n";
 }
 
 // StrAttribute declarations
@@ -144,9 +146,9 @@ void StrAttribute::print() const
 {
     Attribute::print();
     if (this->invalid)
-        printf("invalid\n");
+        std::cout << "invalid\n";
     else
-        printf("%s\n", this->str);
+        std::cout << this->str << "\n";
 }
 
 // HexAttribute declarations
@@ -172,15 +174,15 @@ void HexAttribute::print() const
     Attribute::print();
     if (this->invalid)
     {
-        printf("invalid\n");
+        std::cout << "invalid\n";
     }
     else
     {
         for (size_t i = 0; i < this->size; i++)
         {
-            printf("%02x ", this->bytes[i]);
+            std::cout << std::format("{:02x} ", this->bytes[i]);
         }
-        printf("\n");
+        std::cout << "\n";
     }
 }
 
@@ -207,7 +209,7 @@ void BinaryAttribute::print() const
     Attribute::print();
     if (this->invalid)
     {
-        printf("invalid\n");
+        std::cout << "invalid\n";
     }
     else
     {
@@ -215,7 +217,7 @@ void BinaryAttribute::print() const
         {
             print_binary(this->bytes[i]);
         }
-        printf("\n");
+        std::cout << "\n";
     }
 }
 
@@ -229,7 +231,7 @@ void SkipAttribute::print() const
 {
     Attribute::print();
     if (this->invalid)
-        printf("invalid\n");
+        std::cout << "invalid\n";
     else
-        printf("skipped\n");
+        std::cout << "skipped\n";
 }

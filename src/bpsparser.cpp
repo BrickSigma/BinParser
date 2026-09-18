@@ -1,6 +1,6 @@
 #include "bpsparser.hpp"
 
-#include <stdio.h>
+#include <iostream>
 #include <cstdlib>
 
 /**
@@ -101,7 +101,7 @@ BPSParser::BPSParser(const char *bps_file)
         {
             if (this->sections.empty())
             {
-                printf("No section has been defined yet! Skipping attribute...\n");
+                std::cout << "No section has been defined yet! Skipping attribute...\n";
                 break;
             }
 
@@ -146,7 +146,7 @@ void BPSParser::parse_binary(const char *file)
     {
         if (section.offset >= file_size)
         {
-            printf("%s section offset is outside of the file, skipping...\n", section.name);
+            std::cout << section.name << " section offset is outside of the file, skipping...\n";
             // Set all attributes to be invalidated
             for (std::unique_ptr<Attribute> &attribute : section.attributes)
             {
@@ -171,7 +171,7 @@ void BPSParser::parse_binary(const char *file)
 
             if (attribute->offset + section.offset >= file_size)
             {
-                printf("%s attribute offset is outside of the file, skipping all attributes in section after it...\n", attribute->name);
+                std::cout << attribute->name << " attribute offset is outside of the file, skipping all attributes in section after it...\n";
                 attribute->invalid = true;
                 attributes_valid = false; // Mark all further attributes as invalid
                 continue;
@@ -192,7 +192,7 @@ void BPSParser::print() const noexcept
 {
     if (!this->binary_file_parsed)
     {
-        printf("No binary file has been parsed yet!\n");
+        std::cerr << "No binary file has been parsed yet!\n";
         return;
     }
 
