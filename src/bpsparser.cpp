@@ -1,146 +1,71 @@
 #include "bpsparser.hpp"
 
+#include <fstream>
 #include <iostream>
-#include <cstdlib>
-
-/**
- * Read a line from a file.
- *
- * This returns a string allocated with `new`,
- * make sure to `delete` it later!
- *
- * @return A pointer to the line string, or `NULL` if EOF reached or on error with errno set.
- */
-static char *readline(FILE *file)
-{
-    size_t len = 0;
-    long current_position = ftell(file);
-    while (1)
-    {
-        int c = fgetc(file);
-        if (c == EOF)
-        {
-            break;
-        }
-        if (c == '\n')
-        {
-            len++;
-            break;
-        }
-        len++;
-    }
-    long end_position = ftell(file);
-
-    if (len == 0)
-    {
-        return nullptr;
-    }
-
-    char *line{new char[len + 1]{}};
-
-    fseek(file, current_position, SEEK_SET);
-    for (size_t i = 0; i < len; i++)
-    {
-        line[i] = (char)fgetc(file);
-    }
-    line[len] = 0;
-    fseek(file, end_position, SEEK_SET);
-
-    return line;
-}
+#include <regex>
 
 BPSParser::BPSParser(const char *bps_file)
 {
     this->sections = std::vector<Section>();
 
-    FILE *file = fopen(bps_file, "r");
-    if (file == nullptr)
-    {
-        perror("Could not open file");
-        exit(-1);
-    }
+    std::ifstream file{bps_file};
 
-    char *line = nullptr;
+    std::regex section_header_re("^\\[\\s*\\D[\\w]*\\s*(:\\s*(0[xX][0-9a-fA-F]+|\\d+))?\\s*\\]$");
+    std::regex attribute_re("^\\s*\\D[\\w]*\\s*:\\s*(0[xX][0-9a-fA-F]+|\\d+)\\s*:\\s*(num|str|hex|bin|skip)\\s*$");
+
+    if (!file)
+        throw "Could not open BPS file";
 
     // Current offset in the binary file
-    size_t offset = 0;
+    std::streamoff offset = 0;
 
-    while (true)
+    std::string buffer{};
+    while (std::getline(file, buffer))
     {
-        line = readline(file);
-        if (line == nullptr)
-            break;
-
-        LineType type;
-        switch (line[0])
+        if (std::regex_match(buffer, section_header_re))
         {
-        case '[':
-            type = LineType::SECTION;
-            break;
-        case '\n':
-            type = LineType::IGNORE;
-            break;
-        case '\r':
-            type = LineType::IGNORE;
-            break;
-        default:
-            type = LineType::ATTRIBUTE;
-            break;
-        }
-
-        switch (type)
-        {
-        case LineType::SECTION:
-        {
-            Section section = Section::create_from_sting(line, offset);
+            Section section = Section::create_from_sting(buffer.c_str(), offset);
             offset = section.offset;
             this->sections.push_back(std::move(section));
         }
-        break;
-        case LineType::ATTRIBUTE:
+        else if (std::regex_match(buffer, attribute_re))
         {
             if (this->sections.empty())
             {
-                std::cout << "No section has been defined yet! Skipping attribute...\n";
+                std::cerr << "No section has been defined yet! Skipping attribute...\n";
                 break;
             }
 
             Section &section = this->sections.back();
-
-            std::unique_ptr<Attribute> new_attribute = create_attribute_from_string(line, offset, section.offset);
-
+            std::unique_ptr<Attribute> new_attribute = create_attribute_from_string(buffer.c_str(), offset, section.offset);
             offset += new_attribute->size;
-
             section.add_attribute(std::move(new_attribute));
         }
-        break;
-        case LineType::IGNORE:
-            break;
+        else
+        {
+            if (buffer.length() == 0)
+                continue;
+            std::cerr << "Unknown line read!\n";
         }
-
-        delete[] line;
     }
-
-    fclose(file);
 }
 
 BPSParser::~BPSParser() {}
 
 void BPSParser::parse_binary(const char *file)
 {
-    FILE *bin_file = fopen(file, "rb");
-    if (bin_file == NULL)
-    {
-        perror("Could not open file");
-        return;
-    }
+    std::ifstream bin_file{file, std::ios::binary};
+
+    if (!bin_file)
+        throw "Could not open binary file";
 
     if (this->sections.empty())
         return;
 
-    fseek(bin_file, 0, SEEK_END);
-    size_t file_size = ftell(bin_file);
-    fseek(bin_file, 0, SEEK_SET);
+    bin_file.seekg(0, std::ios::end);
+    std::streamoff file_size = bin_file.tellg();
+    std::cout << "File size: " << file_size << "\n";
+    bin_file.seekg(0, std::ios::beg);
 
     for (Section &section : this->sections)
     {
@@ -158,7 +83,7 @@ void BPSParser::parse_binary(const char *file)
         if (section.attributes.empty())
             continue; // Skip the section if no attributes are present
 
-        fseek(bin_file, section.offset, SEEK_SET);
+        bin_file.seekg(section.offset, std::ios::beg);
 
         bool attributes_valid = true; // Used to indicate if the attributes read are valid or not
         for (std::unique_ptr<Attribute> &attribute : section.attributes)
@@ -178,14 +103,13 @@ void BPSParser::parse_binary(const char *file)
             }
 
             uint8_t *bytes = new uint8_t[attribute->size]{};
-            fread(bytes, sizeof(uint8_t), attribute->size, bin_file);
+            bin_file.read(reinterpret_cast<char *>(bytes), attribute->size);
             attribute->set_value(bytes);
             delete[] bytes;
         }
     }
 
     this->binary_file_parsed = true;
-    fclose(bin_file);
 }
 
 void BPSParser::print() const noexcept

@@ -13,16 +13,16 @@ class Section
 public:
     char name[MAX_SECTION_NAME_LEN];                    // Name of the section
     std::vector<std::unique_ptr<Attribute>> attributes; // List of attributes
-    size_t offset;                                      // Offset of the section in the file
+    std::streamoff offset;                              // Offset of the section in the file
 
     // Create a new section
-    Section(const char *name, size_t offset);
+    Section(const char *name, std::streamoff offset);
 
     // Section destructor
     ~Section();
 
     // Create a section from a section string in the BPS file
-    static Section create_from_sting(const char *line, size_t last_offset);
+    static Section create_from_sting(const char *const line, std::streamoff last_offset);
 
     // Add an attribute to the section
     void add_attribute(std::unique_ptr<Attribute> attribute);

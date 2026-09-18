@@ -14,9 +14,23 @@ int main(int argc, char **argv)
     char *bin_file = argv[1];
     char *script_file = argv[2];
 
-    BPSParser bps(script_file);
+    try
+    {
+        BPSParser bps(script_file);
 
-    bps.parse_binary(bin_file);
-    bps.print();
+        bps.parse_binary(bin_file);
+        bps.print();
+    }
+    catch (const char *error)
+    {
+        std::cerr << "Error: " << error << "\n";
+        return -1;
+    }
+    catch (...)
+    {
+        std::cerr << "Unknown error occured!\n";
+        return -1;
+    }
+
     return 0;
 }
