@@ -1,0 +1,234 @@
+#include "attribute.hpp"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+static const char *const ATTRIBUTE_TYPE_STR_NUM = "num";
+static const char *const ATTRIBUTE_TYPE_STR_STR = "str";
+static const char *const ATTRIBUTE_TYPE_STR_HEX = "hex";
+static const char *const ATTRIBUTE_TYPE_STR_BIN = "bin";
+static const char *const ATTRIBUTE_TYPE_STR_SKIP = "skip";
+
+std::unique_ptr<Attribute> create_attribute_from_string(const char *line, size_t last_offset, size_t last_section_offset)
+{
+    // Create a copy of the line string for strtok
+    char *line_copy{new char[strlen(line) + 1]{}};
+    strncpy(line_copy, line, strlen(line));
+
+    // Get the attribute name
+    char *name = strtok(line_copy, " :\r\n");
+    char *attribute_size_str = strtok(NULL, " :\r\n");
+    size_t attribute_size;
+    if (attribute_size_str == NULL || strlen(attribute_size_str) == 0 || strtoul(attribute_size_str, NULL, 0) == 0)
+    {
+        throw "Attribute size is not valid";
+    }
+
+    attribute_size = strtoul(attribute_size_str, NULL, 0);
+
+    // Get the section offset in the attribute
+    size_t attribute_offset = last_offset - last_section_offset;
+
+    Attribute *attribute;
+    char *attribute_type_str = strtok(NULL, " :\r\n");
+    if (attribute_type_str == NULL || strlen(attribute_type_str) == 0)
+    {
+        throw "Attribute type is invalid";
+    }
+    else if (strcmp(attribute_type_str, ATTRIBUTE_TYPE_STR_NUM) == 0)
+    {
+        if (!(attribute_size == 1 || attribute_size == 2 || attribute_size == 4 || attribute_size == 8))
+            throw "Attribute of type `num` must be of size 1, 2, 4, or 8 bytes!";
+
+        attribute = new IntAttribute(name, attribute_offset, attribute_size);
+    }
+    else if (strcmp(attribute_type_str, ATTRIBUTE_TYPE_STR_STR) == 0)
+    {
+        attribute = new StrAttribute(name, attribute_offset, attribute_size);
+    }
+    else if (strcmp(attribute_type_str, ATTRIBUTE_TYPE_STR_HEX) == 0)
+    {
+        attribute = new HexAttribute(name, attribute_offset, attribute_size);
+    }
+    else if (strcmp(attribute_type_str, ATTRIBUTE_TYPE_STR_BIN) == 0)
+    {
+        attribute = new BinaryAttribute(name, attribute_offset, attribute_size);
+    }
+    else if (strcmp(attribute_type_str, ATTRIBUTE_TYPE_STR_SKIP) == 0)
+    {
+        attribute = new SkipAttribute(name, attribute_offset, attribute_size);
+    }
+    else
+    {
+        throw "Attribute type is invalid";
+    }
+
+    delete[] line_copy;
+    return std::unique_ptr<Attribute>{attribute};
+}
+
+// Print a byte in binary
+static void print_binary(uint8_t byte)
+{
+    for (int i = 7; i >= 0; i--)
+    {
+        printf("%d", (byte >> i) & 1);
+    }
+}
+
+Attribute::Attribute(const char *name, size_t offset, size_t size) : offset(offset), size(size)
+{
+    strncpy(this->name, name, MAX_ATTRIBUTE_NAME_LEN - 1);
+}
+
+Attribute::~Attribute() {}
+
+void Attribute::print() const
+{
+    printf("    %04x: %lu : %s = ", this->offset, this->size, this->name);
+}
+
+// IntAttribute declarations
+
+IntAttribute::IntAttribute(const char *name, size_t offset, size_t size) : Attribute(name, offset, size) {}
+IntAttribute::~IntAttribute() {}
+
+void IntAttribute::set_value(const uint8_t *bytes)
+{
+    switch (this->size)
+    {
+    case 1:
+        this->value = *bytes;
+        break;
+    case 2:
+        this->value = *reinterpret_cast<const uint16_t *>(bytes);
+        break;
+    case 4:
+        this->value = *reinterpret_cast<const uint32_t *>(bytes);
+    case 8:
+        this->value = *reinterpret_cast<const uint64_t *>(bytes);
+        break;
+    }
+}
+
+void IntAttribute::print() const
+{
+    Attribute::print();
+    if (this->invalid)
+        printf("invalid\n");
+    else
+        printf("%ld\n", this->value);
+}
+
+// StrAttribute declarations
+
+StrAttribute::StrAttribute(const char *name, size_t offset, size_t size) : Attribute(name, offset, size)
+{
+    this->str = new char[size + 1]{};
+}
+
+StrAttribute::~StrAttribute()
+{
+    delete[] this->str;
+    this->str = nullptr;
+}
+
+void StrAttribute::set_value(const uint8_t *const bytes)
+{
+    strncpy(this->str, reinterpret_cast<const char *>(bytes), this->size);
+}
+
+void StrAttribute::print() const
+{
+    Attribute::print();
+    if (this->invalid)
+        printf("invalid\n");
+    else
+        printf("%s\n", this->str);
+}
+
+// HexAttribute declarations
+
+HexAttribute::HexAttribute(const char *name, size_t offset, size_t size) : Attribute(name, offset, size)
+{
+    this->bytes = new uint8_t[size]{};
+}
+
+HexAttribute::~HexAttribute()
+{
+    delete[] this->bytes;
+    this->bytes = nullptr;
+}
+
+void HexAttribute::set_value(const uint8_t *bytes)
+{
+    memcpy(this->bytes, bytes, this->size);
+}
+
+void HexAttribute::print() const
+{
+    Attribute::print();
+    if (this->invalid)
+    {
+        printf("invalid\n");
+    }
+    else
+    {
+        for (size_t i = 0; i < this->size; i++)
+        {
+            printf("%02x ", this->bytes[i]);
+        }
+        printf("\n");
+    }
+}
+
+// BinaryAttribute declarations
+
+BinaryAttribute::BinaryAttribute(const char *name, size_t offset, size_t size) : Attribute(name, offset, size)
+{
+    this->bytes = new uint8_t[size]{};
+}
+
+BinaryAttribute::~BinaryAttribute()
+{
+    delete[] this->bytes;
+    this->bytes = nullptr;
+}
+
+void BinaryAttribute::set_value(const uint8_t *bytes)
+{
+    memcpy(this->bytes, bytes, this->size);
+}
+
+void BinaryAttribute::print() const
+{
+    Attribute::print();
+    if (this->invalid)
+    {
+        printf("invalid\n");
+    }
+    else
+    {
+        for (size_t i = 0; i < this->size; i++)
+        {
+            print_binary(this->bytes[i]);
+        }
+        printf("\n");
+    }
+}
+
+// SkipAttribute declarations
+
+SkipAttribute::SkipAttribute(const char *name, size_t offset, size_t size) : Attribute(name, offset, size) {}
+SkipAttribute::~SkipAttribute() {}
+void SkipAttribute::set_value(const uint8_t *bytes) {}
+
+void SkipAttribute::print() const
+{
+    Attribute::print();
+    if (this->invalid)
+        printf("invalid\n");
+    else
+        printf("skipped\n");
+}

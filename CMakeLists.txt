@@ -1,18 +1,26 @@
 cmake_minimum_required(VERSION 3.23)
 
-project(BinParser C)
+project(BinParser 
+    VERSION 0.1.0
+    LANGUAGES CXX
+)
 
 add_executable(binparser)
 
 target_sources(binparser
     PRIVATE
-        src/main.c
-        src/section.c
-        src/attribute.c
+        src/main.cpp
+        src/bpsparser.cpp
+        src/section.cpp
+        src/attribute.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
-            include/section.h
-            include/attribute.h
+            include/bpsparser.hpp
+            include/section.hpp
+            include/attribute.hpp
 )
+
+# Used to install the application globally
+install(TARGETS binparser)
