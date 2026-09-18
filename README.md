@@ -1,5 +1,5 @@
 # BinParser - A binary file parser
-BinParse is a simple binary file parser written in C. It was originally created to help break down binary files like ISO images or compiled ELF binaries while studying their structure.
+BinParse is a simple binary file parser written in C++. It was originally created to help break down binary files like ISO images or compiled ELF binaries while studying their structure.
 
 ## Table of contents
 - [Building and running](#building-and-running)
@@ -12,7 +12,7 @@ BinParse is a simple binary file parser written in C. It was originally created 
 - [Why BinParser was made](#why-binparser-was-made)
 
 ## Building and running
-The project is written in plain C and uses CMake as the build system. To build the project, simply run the following in your favorite terminal:
+The project is written in C++ and uses CMake as the build system. To build the project, simply run the following in your favorite terminal:
 
 ```bash
 cmake -B build -S .
