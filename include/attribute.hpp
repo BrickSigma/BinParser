@@ -68,7 +68,7 @@ public:
 class HexAttribute : public Attribute
 {
 private:
-    uint8_t *bytes = nullptr;
+    uint8_t *array = nullptr;
 
 public:
     HexAttribute(const char *name, std::streamoff offset, std::streamoff size);
@@ -81,7 +81,7 @@ public:
 class BinaryAttribute : public Attribute
 {
 private:
-    uint8_t *bytes = nullptr;
+    uint8_t *array = nullptr;
 
 public:
     BinaryAttribute(const char *name, std::streamoff offset, std::streamoff size);

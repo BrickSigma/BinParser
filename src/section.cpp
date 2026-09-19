@@ -11,20 +11,20 @@
 
 Section::Section(const char *name, std::streamoff offset) : attributes(), offset(offset)
 {
-    strncpy(this->name, name, MAX_SECTION_NAME_LEN - 1);
+    copy_string(this->name, MAX_SECTION_NAME_LEN, name, MAX_SECTION_NAME_LEN - 1);
 }
 
 Section::Section(const char *name, size_t section_ptr, size_t attribute_ptr, std::streamoff scale) : section_ptr(section_ptr), attribute_ptr(attribute_ptr), scale(scale)
 {
     this->offset_is_ptr = true;
-    strncpy(this->name, name, MAX_SECTION_NAME_LEN - 1);
+    copy_string(this->name, MAX_SECTION_NAME_LEN, name, MAX_SECTION_NAME_LEN - 1);
 }
 
 Section Section::create_from_sting(const char *const line, std::streamoff last_offset, const std::vector<Section> &sections)
 {
     // Create a copy of the line string for strtok
     std::unique_ptr<char> line_copy{new char[strlen(line) + 1]{}};
-    strncpy(line_copy.get(), line, strlen(line));
+    copy_string(line_copy.get(), strlen(line) + 1, line, strlen(line));
 
     std::vector<char *> tokens = split_string(line_copy.get(), " [:]");
 

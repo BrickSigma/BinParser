@@ -1,10 +1,11 @@
 #include "attribute.hpp"
 
+#include <cstring>
 #include <iostream>
 #include <format>
 #include <sstream>
 
-#include <string.h>
+#include "utils.hpp"
 
 static const char *const ATTRIBUTE_TYPE_STR_NUM = "num";
 static const char *const ATTRIBUTE_TYPE_STR_STR = "str";
@@ -16,11 +17,13 @@ std::unique_ptr<Attribute> create_attribute_from_string(const char *const line, 
 {
     // Create a copy of the line string for strtok
     char *line_copy{new char[strlen(line) + 1]{}};
-    strncpy(line_copy, line, strlen(line));
+    copy_string(line_copy, strlen(line) + 1, line, strlen(line));
+
+    std::vector<char*> tokens = split_string(line_copy, " :\r\n");
 
     // Get the attribute name
-    char *name = strtok(line_copy, " :\r\n");
-    char *attribute_size_str = strtok(NULL, " :\r\n");
+    char *name = tokens[0];
+    char *attribute_size_str = tokens[1];
     std::streamoff attribute_size;
     if (attribute_size_str == NULL || strlen(attribute_size_str) == 0 || strtol(attribute_size_str, NULL, 0) <= 0)
     {
@@ -35,7 +38,7 @@ std::unique_ptr<Attribute> create_attribute_from_string(const char *const line, 
     std::streamoff attribute_offset = last_offset - last_section_offset;
 
     Attribute *attribute;
-    char *attribute_type_str = strtok(NULL, " :\r\n");
+    char *attribute_type_str = tokens[2];
     if (attribute_type_str == NULL || strlen(attribute_type_str) == 0)
     {
         throw "Attribute type is invalid";
@@ -83,7 +86,7 @@ static void print_binary(uint8_t byte)
 
 Attribute::Attribute(const char *name, std::streamoff offset, std::streamoff size, AttributeType type) : offset(offset), size(size), type(type)
 {
-    strncpy(this->name, name, MAX_ATTRIBUTE_NAME_LEN - 1);
+    copy_string(this->name, MAX_ATTRIBUTE_NAME_LEN, name, MAX_ATTRIBUTE_NAME_LEN - 1);
 }
 
 Attribute::~Attribute() {}
@@ -146,7 +149,7 @@ StrAttribute::~StrAttribute()
 
 void StrAttribute::set_value(const uint8_t *const bytes)
 {
-    strncpy(this->str, reinterpret_cast<const char *>(bytes), this->size);
+    copy_string(this->str, this->size + 1, reinterpret_cast<const char*>(bytes), this->size);
 }
 
 void StrAttribute::print() const
@@ -162,18 +165,18 @@ void StrAttribute::print() const
 
 HexAttribute::HexAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size, AttributeType::Hex)
 {
-    this->bytes = new uint8_t[size]{};
+    this->array = new uint8_t[size]{};
 }
 
 HexAttribute::~HexAttribute()
 {
-    delete[] this->bytes;
-    this->bytes = nullptr;
+    delete[] this->array;
+    this->array = nullptr;
 }
 
 void HexAttribute::set_value(const uint8_t *bytes)
 {
-    memcpy(this->bytes, bytes, this->size);
+    memcpy(this->array, bytes, this->size);
 }
 
 void HexAttribute::print() const
@@ -187,7 +190,7 @@ void HexAttribute::print() const
     {
         for (std::streamoff i = 0; i < this->size; i++)
         {
-            std::cout << std::format("{:02x} ", this->bytes[i]);
+            std::cout << std::format("{:02x} ", this->array[i]);
         }
         std::cout << "\n";
     }
@@ -197,18 +200,18 @@ void HexAttribute::print() const
 
 BinaryAttribute::BinaryAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size, AttributeType::Bin)
 {
-    this->bytes = new uint8_t[size]{};
+    this->array = new uint8_t[size]{};
 }
 
 BinaryAttribute::~BinaryAttribute()
 {
-    delete[] this->bytes;
-    this->bytes = nullptr;
+    delete[] this->array;
+    this->array = nullptr;
 }
 
 void BinaryAttribute::set_value(const uint8_t *bytes)
 {
-    memcpy(this->bytes, bytes, this->size);
+    memcpy(this->array, bytes, this->size);
 }
 
 void BinaryAttribute::print() const
@@ -222,7 +225,7 @@ void BinaryAttribute::print() const
     {
         for (std::streamoff i = 0; i < this->size; i++)
         {
-            print_binary(this->bytes[i]);
+            print_binary(this->array[i]);
         }
         std::cout << "\n";
     }

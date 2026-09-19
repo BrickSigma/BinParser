@@ -2,16 +2,34 @@
 
 #include <cstring>
 
-std::vector<char *> split_string(char *str, const char *delimeters)
+#if defined(_WIN32) || defined(_WIN64)
+#define strtok_r strtok_s
+#endif
+
+char *copy_string(char* dest, size_t destsz, const char* src, size_t count)
 {
-    std::vector<char *> strings{};
+	(void)destsz;  // Prevent unused variable compiler warning
+#if defined(_WIN32) || defined(_WIN64)
+	errno_t error = strncpy_s(dest, destsz, src, count);
+	if (error != 0)
+		return nullptr;
+	return dest;
+#else
+	return strncpy(dest, src, count);
+#endif
+}
 
-    char *token = std::strtok(str, delimeters);
-    while (token != nullptr)
-    {
-        strings.push_back(token);
-        token = std::strtok(nullptr, delimeters);
-    }
+std::vector<char*> split_string(char* str, const char* delimeters)
+{
+	std::vector<char*> strings{};
+	char* saveptr{ nullptr };
 
-    return strings;
+	char* token = strtok_r(str, delimeters, &saveptr);
+	while (token != nullptr)
+	{
+		strings.push_back(token);
+		token = strtok_r(nullptr, delimeters, &saveptr);
+	}
+
+	return strings;
 }
