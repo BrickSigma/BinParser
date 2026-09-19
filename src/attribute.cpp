@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <format>
+#include <sstream>
 
 #include <string.h>
 
@@ -23,7 +24,9 @@ std::unique_ptr<Attribute> create_attribute_from_string(const char *const line, 
     std::streamoff attribute_size;
     if (attribute_size_str == NULL || strlen(attribute_size_str) == 0 || strtol(attribute_size_str, NULL, 0) <= 0)
     {
-        throw "Attribute size is not valid";
+        std::ostringstream error{};
+        error << std::format("{} attribute size is not valid (must be a positive, non-zero value)", name);
+        throw error.str();
     }
 
     attribute_size = strtol(attribute_size_str, NULL, 0);
@@ -78,7 +81,7 @@ static void print_binary(uint8_t byte)
     }
 }
 
-Attribute::Attribute(const char *name, std::streamoff offset, std::streamoff size) : offset(offset), size(size)
+Attribute::Attribute(const char *name, std::streamoff offset, std::streamoff size, AttributeType type) : offset(offset), size(size), type(type)
 {
     strncpy(this->name, name, MAX_ATTRIBUTE_NAME_LEN - 1);
 }
@@ -92,7 +95,7 @@ void Attribute::print() const
 
 // IntAttribute declarations
 
-IntAttribute::IntAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size) {}
+IntAttribute::IntAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size, AttributeType::Int) {}
 IntAttribute::~IntAttribute() {}
 
 void IntAttribute::set_value(const uint8_t *bytes)
@@ -114,6 +117,11 @@ void IntAttribute::set_value(const uint8_t *bytes)
     }
 }
 
+uint64_t IntAttribute::get_value() const
+{
+    return this->value;
+}
+
 void IntAttribute::print() const
 {
     Attribute::print();
@@ -125,7 +133,7 @@ void IntAttribute::print() const
 
 // StrAttribute declarations
 
-StrAttribute::StrAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size)
+StrAttribute::StrAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size, AttributeType::Str)
 {
     this->str = new char[size + 1]{};
 }
@@ -152,7 +160,7 @@ void StrAttribute::print() const
 
 // HexAttribute declarations
 
-HexAttribute::HexAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size)
+HexAttribute::HexAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size, AttributeType::Hex)
 {
     this->bytes = new uint8_t[size]{};
 }
@@ -187,7 +195,7 @@ void HexAttribute::print() const
 
 // BinaryAttribute declarations
 
-BinaryAttribute::BinaryAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size)
+BinaryAttribute::BinaryAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size, AttributeType::Bin)
 {
     this->bytes = new uint8_t[size]{};
 }
@@ -222,7 +230,7 @@ void BinaryAttribute::print() const
 
 // SkipAttribute declarations
 
-SkipAttribute::SkipAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size) {}
+SkipAttribute::SkipAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size, AttributeType::Skip) {}
 SkipAttribute::~SkipAttribute() {}
 void SkipAttribute::set_value(const uint8_t *) {}
 

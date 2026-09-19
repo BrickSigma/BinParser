@@ -22,6 +22,7 @@ target_sources(binparser
         src/bpsparser.cpp
         src/section.cpp
         src/attribute.cpp
+        src/utils.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -29,6 +30,7 @@ target_sources(binparser
             include/bpsparser.hpp
             include/section.hpp
             include/attribute.hpp
+            include/utils.hpp
 )
 
 # Used to install the application globally

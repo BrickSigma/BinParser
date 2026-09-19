@@ -6,6 +6,16 @@
 
 #define MAX_ATTRIBUTE_NAME_LEN (256)
 
+// Used to identify the type of derived attribute
+typedef enum class AttributeType
+{
+    Int,
+    Str,
+    Hex,
+    Bin,
+    Skip
+} AttributeType;
+
 class Attribute
 {
 public:
@@ -13,9 +23,10 @@ public:
     std::streamoff offset;             // Offset of the attribute relative to the start of a section
     std::streamoff size;               // Size of the attribute in bytes
     bool invalid = false;              // Indicates if the field is invalid
+    AttributeType type;
 
     // Attribute constructor
-    Attribute(const char *name, std::streamoff offset, std::streamoff size);
+    Attribute(const char *name, std::streamoff offset, std::streamoff size, AttributeType type);
     virtual ~Attribute() = 0;
     // Set the attribute's value using an array of bytes
     virtual void set_value(const uint8_t *bytes) = 0;
@@ -36,6 +47,7 @@ public:
     IntAttribute(const char *name, std::streamoff offset, std::streamoff size);
     ~IntAttribute();
     void set_value(const uint8_t *bytes) override;
+    uint64_t get_value() const;
     void print() const override;
 };
 

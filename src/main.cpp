@@ -26,6 +26,11 @@ int main(int argc, char **argv)
         std::cerr << "Error: " << error << "\n";
         return -1;
     }
+    catch (std::string error)
+    {
+        std::cerr << error << "\n";
+        return -1;
+    }
     catch (...)
     {
         std::cerr << "Unknown error occured!\n";
