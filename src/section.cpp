@@ -99,8 +99,6 @@ Section Section::create_from_sting(const char *const line, std::streamoff last_o
         if (tokens.size() == 4)
             scale = std::strtol(tokens[3], nullptr, 0);
 
-        std::cout << std::format("Parsed offset ptr: {} {} {} at section {} and attribute {}\n", section_name, section_attribute, scale, section_ptr, attribute_ptr);
-
         return Section(name, section_ptr, attribute_ptr, scale);
     }
 
