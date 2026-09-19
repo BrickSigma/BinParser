@@ -82,6 +82,7 @@ static void print_binary(uint8_t byte)
     {
         std::cout << ((byte >> i) & 1);
     }
+    std::cout << " ";
 }
 
 Attribute::Attribute(const char *name, std::streamoff offset, std::streamoff size, AttributeType type) : offset(offset), size(size), type(type)

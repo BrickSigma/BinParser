@@ -63,7 +63,7 @@ reserved:4:num
 header_lba:8:num
 alternate_gpt_lba:8:num
 first_block:8:num
-last_blocl:8:num
+last_block:8:num
 guid:16:hex
 partition_entry:8:num
 no_partitions:4:num
@@ -79,7 +79,7 @@ reserved:4:num
 header_lba:8:num
 alternate_gpt_lba:8:num
 first_block:8:num
-last_blocl:8:num
+last_block:8:num
 guid:16:hex
 partition_entry:8:num
 no_partitions:4:num
@@ -114,7 +114,7 @@ gpt_header: 0x00000200
     0018: 8 : header_lba = 1
     0020: 8 : alternate_gpt_lba = 4095
     0028: 8 : first_block = 64
-    0030: 8 : last_blocl = 4032
+    0030: 8 : last_block = 4032
     0038: 16 : guid = ea 9d 9c 95 41 b5 1d 4f 8a 89 ff e8 0a c5 14 b0 
     0048: 8 : partition_entry = 2
     0050: 4 : no_partitions = 248
@@ -130,7 +130,7 @@ alt_gpt_header: 0x001ffe00
     0018: 8 : header_lba = 4095
     0020: 8 : alternate_gpt_lba = 1
     0028: 8 : first_block = 64
-    0030: 8 : last_blocl = 4032
+    0030: 8 : last_block = 4032
     0038: 16 : guid = ea 9d 9c 95 41 b5 1d 4f 8a 89 ff e8 0a c5 14 b0 
     0048: 8 : partition_entry = 4033
     0050: 4 : no_partitions = 248
