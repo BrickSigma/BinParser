@@ -4,6 +4,7 @@ BinParse is a simple binary file parser written in C++. It was originally create
 ## Table of contents
 - [Building and running](#building-and-running)
 - [How it works](#how-it-works)
+- [Example script](#example-script)
 - [BPS file format explained](#bps-file-format-explained)
     - [Section structure](#section-structure)
     - [Attribute structure](#attribute-structure)
@@ -29,9 +30,14 @@ BinParser uses a simple script file called the **Binary Parser Script** (or `.bp
 1. Sections - define offsets in the binary file on where to parse
 2. Attributes - are part of sections and hold the values you want to read
 
-The parser reads through the BPS file and constructs an internal representation of the sections and attributes. It then reads the binary file specified and fills the attributes with their values.
+The parser reads through the BPS file and constructs an internal representation of the sections and attributes. It then reads the binary file specified and fills the attributes with their values. The format of how sections and attributes are declared is described further [below](#bps-file-format-explained).
 
-A simple BPS file is shown below as an example. The script is used for reading the MBR partition table in the boot sector of a disc image and also reads the GPT partition header in the next sector:
+
+## Example script
+A simple BPS file is shown below as an example. The script is used for reading the following sections in an El-Torito formated ISO image:
+- MBR partition table in the boot sector
+- GPT header in the next partition (LBA 1)
+- Alternative GPT header pointed by the first one
 
 ```
 [mbr]
@@ -48,7 +54,23 @@ chs_end:3:hex
 lba_start:4:num
 lba_end:4:num
 
-[partition_header:0x200]
+[gpt_header:0x200]
+signature:8:str
+revision:4:num
+header_size:4:num
+crc_checksum:4:hex
+reserved:4:num
+header_lba:8:num
+alternate_gpt_lba:8:num
+first_block:8:num
+last_blocl:8:num
+guid:16:hex
+partition_entry:8:num
+no_partitions:4:num
+entry_size:4:num
+crc_partitions:4:hex
+
+[alt_gpt_header:gpt_header.alternate_gpt_lba * 512]
 signature:8:str
 revision:4:num
 header_size:4:num
@@ -65,16 +87,82 @@ entry_size:4:num
 crc_partitions:4:hex
 ```
 
+When run using `binparser image.iso file.bps`, the following output is printed to stdout:
+
+```
+mbr: 0x00000000
+    0000: 440 : skip = skipped
+    01b8: 4 : signature = e3 a1 55 02 
+    01bc: 2 : reserved = 00 00 
+
+mbr_table: 0x000001be
+
+partition_1: 0x000001be
+    0000: 1 : drive_attr = 10000000
+    0001: 3 : chs_start = 00 01 00 
+    0004: 1 : type = 00 
+    0005: 3 : chs_end = 3f 20 01 
+    0008: 4 : lba_start = 0
+    000c: 4 : lba_end = 4096
+
+gpt_header: 0x00000200
+    0000: 8 : signature = EFI PART
+    0008: 4 : revision = 65536
+    000c: 4 : header_size = 92
+    0010: 4 : crc_checksum = ad 06 18 5f 
+    0014: 4 : reserved = 0
+    0018: 8 : header_lba = 1
+    0020: 8 : alternate_gpt_lba = 4095
+    0028: 8 : first_block = 64
+    0030: 8 : last_blocl = 4032
+    0038: 16 : guid = ea 9d 9c 95 41 b5 1d 4f 8a 89 ff e8 0a c5 14 b0 
+    0048: 8 : partition_entry = 2
+    0050: 4 : no_partitions = 248
+    0054: 4 : entry_size = 128
+    0058: 4 : crc_partitions = 49 9a f7 66 
+
+alt_gpt_header: 0x001ffe00
+    0000: 8 : signature = EFI PART
+    0008: 4 : revision = 65536
+    000c: 4 : header_size = 92
+    0010: 4 : crc_checksum = 2d c1 5e 51 
+    0014: 4 : reserved = 0
+    0018: 8 : header_lba = 4095
+    0020: 8 : alternate_gpt_lba = 1
+    0028: 8 : first_block = 64
+    0030: 8 : last_blocl = 4032
+    0038: 16 : guid = ea 9d 9c 95 41 b5 1d 4f 8a 89 ff e8 0a c5 14 b0 
+    0048: 8 : partition_entry = 4033
+    0050: 4 : no_partitions = 248
+    0054: 4 : entry_size = 128
+    0058: 4 : crc_partitions = 49 9a f7 66
+```
+
+The sections are printed in the format:
+```
+section_name: offset
+```
+Where the offset is in hexadecimal notation. The attributes are printed like so as well:
+```
+offset: size : attribute_name = value
+```
+- `offset` - offset of the attribute relative to the section, printed in hexadecimal
+- `size` - size of the attribute in bytes
+- `attribute_name` - the name of the attribute
+- `value` - the value stored in the attribute
+
 ## BPS file format explained
 As mentioned above, a BPS file has two parts: **sections** and **attribute**
 
 ### Section structure
-Sections can be defined in 2 ways:
+Sections can be defined in 4 ways:
 
 1. `[section_name]` - define a section that follows immediately after the last section and it's attributes
 2. `[section_name:offset]` - define a section at a fixed offset in the file. The offset can be in either decimal or hexadecimal format
+3. `[section_name:section.attribute]` - defines a section at an offset pointed by another attribute in another section
+4. `[section_name:section.attribute * scale]` - similar to `3`, but the offset can be scaled by a `scale` factor.
 
-Any section that lies outside of the file is automatically skipped and it's attributes are marked as `INVALID`.
+Any section that lies outside of the file is automatically skipped and it's attributes are marked as `invalid`.
 
 ### Attribute structure
 Attributes have only one format:
@@ -101,11 +189,10 @@ At the moment, there are 4 main attribute types supported
 - [x] - Parse different types (numbers, strings, raw bytes)
 - [x] - Jump to different sections in a file
 - [x] - Handle illegal sections and attributes
+- [x] - Allow relative offsets based on attribute values
 - [ ] - Handle command line arguments better
 - [ ] - Save the output to a file instead of just stdout
 - [ ] - Maybe write some unit tests (if I get the time...)
-- [ ] - Allow relative offsets based on attribute values
-- [ ] - Maybe use C++ instead of C to simplify the code with Vectors...
 
 ## Why BinParser was made
 One of my hobby projects is an operating system/bootloader from scratch ([SteinerOS](https://github.com/BrickSigma/SteinerOS)) and a large part of learning how to develop it is understanding the structure of raw binary files and images, such as the ELF headers in an executable or the file table in an ISO 9660 image. 

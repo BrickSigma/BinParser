@@ -11,14 +11,6 @@ private:
     std::vector<Section> sections;   // List of all sections
     bool binary_file_parsed = false; // Indicates if the file has been parsed yet
 
-    // Parsed line type
-    typedef enum class LineType
-    {
-        SECTION,
-        ATTRIBUTE,
-        IGNORE
-    } LineType;
-
 public:
     // Create a BPS Parser instance from a BPS file
     BPSParser(const char *bps_file);
@@ -28,7 +20,7 @@ public:
     // Parse a binary file
     void parse_binary(const char *file);
 
-    void print() const;
+    void print() const noexcept;
 };
 
 #endif // BPSPARSER_HPP

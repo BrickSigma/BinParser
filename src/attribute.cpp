@@ -1,7 +1,9 @@
 #include "attribute.hpp"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
+#include <format>
+#include <sstream>
+
 #include <string.h>
 
 static const char *const ATTRIBUTE_TYPE_STR_NUM = "num";
@@ -10,7 +12,7 @@ static const char *const ATTRIBUTE_TYPE_STR_HEX = "hex";
 static const char *const ATTRIBUTE_TYPE_STR_BIN = "bin";
 static const char *const ATTRIBUTE_TYPE_STR_SKIP = "skip";
 
-std::unique_ptr<Attribute> create_attribute_from_string(const char *line, size_t last_offset, size_t last_section_offset)
+std::unique_ptr<Attribute> create_attribute_from_string(const char *const line, std::streamoff last_offset, std::streamoff last_section_offset)
 {
     // Create a copy of the line string for strtok
     char *line_copy{new char[strlen(line) + 1]{}};
@@ -19,16 +21,18 @@ std::unique_ptr<Attribute> create_attribute_from_string(const char *line, size_t
     // Get the attribute name
     char *name = strtok(line_copy, " :\r\n");
     char *attribute_size_str = strtok(NULL, " :\r\n");
-    size_t attribute_size;
-    if (attribute_size_str == NULL || strlen(attribute_size_str) == 0 || strtoul(attribute_size_str, NULL, 0) == 0)
+    std::streamoff attribute_size;
+    if (attribute_size_str == NULL || strlen(attribute_size_str) == 0 || strtol(attribute_size_str, NULL, 0) <= 0)
     {
-        throw "Attribute size is not valid";
+        std::ostringstream error{};
+        error << std::format("{} attribute size is not valid (must be a positive, non-zero value)", name);
+        throw error.str();
     }
 
-    attribute_size = strtoul(attribute_size_str, NULL, 0);
+    attribute_size = strtol(attribute_size_str, NULL, 0);
 
     // Get the section offset in the attribute
-    size_t attribute_offset = last_offset - last_section_offset;
+    std::streamoff attribute_offset = last_offset - last_section_offset;
 
     Attribute *attribute;
     char *attribute_type_str = strtok(NULL, " :\r\n");
@@ -73,11 +77,11 @@ static void print_binary(uint8_t byte)
 {
     for (int i = 7; i >= 0; i--)
     {
-        printf("%d", (byte >> i) & 1);
+        std::cout << ((byte >> i) & 1);
     }
 }
 
-Attribute::Attribute(const char *name, size_t offset, size_t size) : offset(offset), size(size)
+Attribute::Attribute(const char *name, std::streamoff offset, std::streamoff size, AttributeType type) : offset(offset), size(size), type(type)
 {
     strncpy(this->name, name, MAX_ATTRIBUTE_NAME_LEN - 1);
 }
@@ -86,12 +90,12 @@ Attribute::~Attribute() {}
 
 void Attribute::print() const
 {
-    printf("    %04x: %lu : %s = ", this->offset, this->size, this->name);
+    std::cout << std::format("    {:04x}: {} : {} = ", this->offset, this->size, this->name);
 }
 
 // IntAttribute declarations
 
-IntAttribute::IntAttribute(const char *name, size_t offset, size_t size) : Attribute(name, offset, size) {}
+IntAttribute::IntAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size, AttributeType::Int) {}
 IntAttribute::~IntAttribute() {}
 
 void IntAttribute::set_value(const uint8_t *bytes)
@@ -106,24 +110,30 @@ void IntAttribute::set_value(const uint8_t *bytes)
         break;
     case 4:
         this->value = *reinterpret_cast<const uint32_t *>(bytes);
+        break;
     case 8:
         this->value = *reinterpret_cast<const uint64_t *>(bytes);
         break;
     }
 }
 
+uint64_t IntAttribute::get_value() const
+{
+    return this->value;
+}
+
 void IntAttribute::print() const
 {
     Attribute::print();
     if (this->invalid)
-        printf("invalid\n");
+        std::cout << "invalid\n";
     else
-        printf("%ld\n", this->value);
+        std::cout << this->value << "\n";
 }
 
 // StrAttribute declarations
 
-StrAttribute::StrAttribute(const char *name, size_t offset, size_t size) : Attribute(name, offset, size)
+StrAttribute::StrAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size, AttributeType::Str)
 {
     this->str = new char[size + 1]{};
 }
@@ -143,14 +153,14 @@ void StrAttribute::print() const
 {
     Attribute::print();
     if (this->invalid)
-        printf("invalid\n");
+        std::cout << "invalid\n";
     else
-        printf("%s\n", this->str);
+        std::cout << this->str << "\n";
 }
 
 // HexAttribute declarations
 
-HexAttribute::HexAttribute(const char *name, size_t offset, size_t size) : Attribute(name, offset, size)
+HexAttribute::HexAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size, AttributeType::Hex)
 {
     this->bytes = new uint8_t[size]{};
 }
@@ -171,21 +181,21 @@ void HexAttribute::print() const
     Attribute::print();
     if (this->invalid)
     {
-        printf("invalid\n");
+        std::cout << "invalid\n";
     }
     else
     {
-        for (size_t i = 0; i < this->size; i++)
+        for (std::streamoff i = 0; i < this->size; i++)
         {
-            printf("%02x ", this->bytes[i]);
+            std::cout << std::format("{:02x} ", this->bytes[i]);
         }
-        printf("\n");
+        std::cout << "\n";
     }
 }
 
 // BinaryAttribute declarations
 
-BinaryAttribute::BinaryAttribute(const char *name, size_t offset, size_t size) : Attribute(name, offset, size)
+BinaryAttribute::BinaryAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size, AttributeType::Bin)
 {
     this->bytes = new uint8_t[size]{};
 }
@@ -206,29 +216,29 @@ void BinaryAttribute::print() const
     Attribute::print();
     if (this->invalid)
     {
-        printf("invalid\n");
+        std::cout << "invalid\n";
     }
     else
     {
-        for (size_t i = 0; i < this->size; i++)
+        for (std::streamoff i = 0; i < this->size; i++)
         {
             print_binary(this->bytes[i]);
         }
-        printf("\n");
+        std::cout << "\n";
     }
 }
 
 // SkipAttribute declarations
 
-SkipAttribute::SkipAttribute(const char *name, size_t offset, size_t size) : Attribute(name, offset, size) {}
+SkipAttribute::SkipAttribute(const char *name, std::streamoff offset, std::streamoff size) : Attribute(name, offset, size, AttributeType::Skip) {}
 SkipAttribute::~SkipAttribute() {}
-void SkipAttribute::set_value(const uint8_t *bytes) {}
+void SkipAttribute::set_value(const uint8_t *) {}
 
 void SkipAttribute::print() const
 {
     Attribute::print();
     if (this->invalid)
-        printf("invalid\n");
+        std::cout << "invalid\n";
     else
-        printf("skipped\n");
+        std::cout << "skipped\n";
 }

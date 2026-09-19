@@ -5,7 +5,16 @@ project(BinParser
     LANGUAGES CXX
 )
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED On)
+
 add_executable(binparser)
+
+if(MSVC)
+  target_compile_options(binparser PRIVATE /W4 /WX)
+else()
+  target_compile_options(binparser PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
 
 target_sources(binparser
     PRIVATE
@@ -13,6 +22,7 @@ target_sources(binparser
         src/bpsparser.cpp
         src/section.cpp
         src/attribute.cpp
+        src/utils.cpp
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS include
@@ -20,6 +30,7 @@ target_sources(binparser
             include/bpsparser.hpp
             include/section.hpp
             include/attribute.hpp
+            include/utils.hpp
 )
 
 # Used to install the application globally
